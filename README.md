@@ -1,74 +1,76 @@
 # Yandex Exporter
 
-Чтение задач Yandex Tracker и страниц Yandex Wiki через локальные Python-утилиты:
+English | [Русский](README-RU.md)
 
-- **Tracker CLI** — экспорт задачи, всех доступных подзадач, комментариев и вложений в Markdown. [Подробности](README-tracker.md).
-- **Wiki CLI** — экспорт дерева страниц, исходного текста, метаданных, комментариев и вложений. [Подробности](README-wiki.md).
-- **MCP-сервер** — чтение задач и страниц прямо в MCP-клиенте; вложения возвращаются только как метаданные. [Подключение](README-mcp.md).
+Read Yandex Tracker issues and Yandex Wiki pages using local Python utilities:
 
-Все режимы выполняют только чтение в Яндексе. CLI сохраняет данные на локальный диск.
+- **Tracker CLI** — export an issue, all accessible child issues, comments, and attachments to Markdown. [Details](README-tracker.md).
+- **Wiki CLI** — export a page tree, source content, metadata, comments, and attachments. [Details](README-wiki.md).
+- **MCP server** — read issues and pages directly in an MCP client; attachments are returned as metadata only. [Setup](README-mcp.md).
 
-## Требования и установка
+All modes perform read-only operations in Yandex. The CLIs save data to local disk.
 
-Используйте Python **3.10 или новее**; полный набор проверок проекта выполнялся на Python 3.12. Для файловых экспортеров достаточно стандартной библиотеки. MCP требует дополнительных зависимостей.
+## Requirements and Installation
 
-После клонирования перейдите в каталог проекта:
+Use Python **3.10 or newer**; the full project verification suite was run on Python 3.12. The file exporters use only the standard library. MCP requires additional dependencies.
+
+After cloning, open the project directory:
 
 ```bash
 cd yandex-exporter
 python3.12 -m venv .venv
-# Только для MCP:
+# For MCP only:
 .venv/bin/python -m pip install -r requirements-mcp.txt
 ```
 
-Если Python установлен под другим именем, замените `python3.12` на команду вашей версии Python 3.10+. Примеры команд рассчитаны на POSIX shell (Linux/macOS); в Windows используйте Python из `.venv\Scripts\python.exe` и настройте окружение средствами своей оболочки.
+If Python is installed under a different name, replace `python3.12` with the command for your Python 3.10+ installation. Commands assume a POSIX shell (Linux/macOS); on Windows, use `.venv\Scripts\python.exe` and configure the environment in your shell.
 
-## Авторизация
+## Authentication
 
-Для всех режимов обязательны две переменные окружения:
+All modes require two environment variables:
 
-| Переменная | Значение |
+| Variable | Value |
 | --- | --- |
-| `YANDEX_TRACKER_OAUTH_TOKEN` | OAuth-токен пользователя, имеющего доступ к нужным объектам |
-| `IDENTITY_HUB` | ID вашей организации Yandex Cloud Organization; передаётся в `X-Cloud-Org-ID` |
+| `YANDEX_TRACKER_OAUTH_TOKEN` | An OAuth token for a user with access to the required objects |
+| `IDENTITY_HUB` | Your Yandex Cloud Organization ID; sent in `X-Cloud-Org-ID` |
 
-Проект рассчитан на организации с авторизацией через Yandex Cloud Organization. Другой тип организационного заголовка сейчас не поддерживается.
+The project supports organizations using Yandex Cloud Organization authentication. Other organization header types are not currently supported.
 
-Получение токена и права описаны в официальных инструкциях [Tracker](https://yandex.ru/support/tracker/ru/api/access) и [Wiki](https://yandex.ru/support/wiki/ru/api-ref/access). Для Wiki необходимо право `wiki:read`; для Tracker — `tracker:read`. Пользователь токена должен иметь доступ к нужным задачам и страницам. ID организации можно найти в Tracker: Администрирование → Организации. Приложения не выполняют вход и не обновляют токен.
+Token setup and permissions are described in the official [Tracker](https://yandex.ru/support/tracker/ru/api/access) and [Wiki](https://yandex.ru/support/wiki/ru/api-ref/access) documentation. Wiki requires `wiki:read`; Tracker requires `tracker:read`. The token's user must have access to the required issues and pages. Find the organization ID in Tracker under Administration → Organizations. The applications do not perform login or refresh tokens.
 
-Можно задать переменные средствами оболочки или хранилища секретов. Для локальной работы в POSIX shell:
+Set the variables through your shell or a secret store. For local use in a POSIX shell:
 
 ```bash
 cp .env.example .env
 chmod 600 .env
-# Заполните .env в локальном редакторе, затем:
+# Fill in .env in a local editor, then:
 set -a
 . ./.env
 set +a
 ```
 
-`.env` содержит shell-присваивания; загружайте только собственный доверенный файл. Программы не читают его автоматически. Не публикуйте токен, конфигурацию клиента с токеном или выгруженные данные. `.env` и `exports/` исключены из Git.
+`.env` contains shell assignments; only load your own trusted file. The programs do not read it automatically. Do not publish tokens, client configuration containing tokens, or exported data. `.env` and `exports/` are excluded from Git.
 
-## Экспорт Tracker
+## Export Tracker Issues
 
 ```bash
 .venv/bin/python export_tracker.py ABC-123 exports/
 ```
 
-Подготовка, структура файлов, повторный запуск и коды ошибок описаны в [инструкции Tracker](README-tracker.md). При отсутствии каталога выгрузка создаётся в текущей директории; внутри репозитория указывайте `exports/`.
+Setup, output structure, repeated runs, and error codes are described in the [Tracker guide](README-tracker.md). Without an output directory, the export is created in the current directory; use `exports/` when working inside the repository.
 
-## Экспорт Wiki
+## Export Wiki Pages
 
 ```bash
 .venv/bin/python export_wiki.py 'https://wiki.yandex.ru/space/page/' exports/
 ```
 
-При сбое загрузки прежняя готовая выгрузка Wiki сохраняется. Ограничения форматов описаны в [инструкции Wiki](README-wiki.md).
+If downloading fails, the previous completed Wiki export is preserved. Format limitations are described in the [Wiki guide](README-wiki.md).
 
-## Разработка
+## Development
 
-Установка зависимостей и проверки описаны в [CONTRIBUTING.md](CONTRIBUTING.md), правила для агентов — в [AGENTS.md](AGENTS.md). О сообщениях об уязвимостях — в [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dependency setup and verification, [AGENTS.md](AGENTS.md) for agent instructions, and [SECURITY.md](SECURITY.md) for vulnerability reporting.
 
-## Лицензия
+## License
 
 [MIT](LICENSE).

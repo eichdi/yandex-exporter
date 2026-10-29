@@ -1,29 +1,33 @@
-# Экспорт дерева Yandex Wiki
+# Export Yandex Wiki Trees
 
-Скрипт сохраняет указанную страницу Wiki, её доступные подстраницы всех уровней, вложения и комментарии.
+English | [Русский](README-wiki-RU.md)
+
+The script saves the specified Wiki page, its accessible descendants at all levels, attachments, and comments.
 
 ```bash
 python3 export_wiki.py "https://wiki.yandex.ru/space/page/" exports/
 ```
 
-Если каталог не указан, выгрузка создаётся в текущем каталоге. Нужны переменные окружения:
+If no output directory is specified, the export is created in the current directory. Set the following environment variables:
 
 ```bash
-export YANDEX_TRACKER_OAUTH_TOKEN="OAuth-токен с правом wiki:read"
-export IDENTITY_HUB="ID_ВАШЕЙ_ОРГАНИЗАЦИИ"
+export YANDEX_TRACKER_OAUTH_TOKEN="OAUTH_TOKEN_WITH_WIKI_READ_PERMISSION"
+export IDENTITY_HUB="YOUR_ORGANIZATION_ID"
 ```
 
-Обе переменные обязательны. Установка, получение доступа и загрузка локального `.env` описаны в [README](README.md). Требуется Python 3.10+.
+Both variables are required. Installation, access setup, and loading a local `.env` file are described in the [README](README.md). Python 3.10+ is required.
 
-Структура результата:
+Output structure (the service directory names are in Russian):
 
 ```text
-Название страницы/
-  Название страницы — summary.md
+Page title/
+  Page title — summary.md
   Вложения/
   Подстраницы/
 ```
 
-`summary.md` содержит текущий текст Wiki без сокращений, доступные метаданные, список файлов и комментарии с авторами, датами, связями ответов и статусами. Специальная разметка Wiki сохраняется буквально. Интерактивные элементы и история редакций не преобразуются в отдельные локальные представления.
+`Вложения/` contains attachments; `Подстраницы/` contains child pages.
 
-При повторном запуске скрипт заменяет только предыдущий экспорт той же корневой страницы. Он сначала скачивает всё дерево во временный каталог, поэтому сбой доступа или загрузки файла сохраняет готовую предыдущую выгрузку.
+`summary.md` contains the complete current Wiki source text, available metadata, a file list, and comments with authors, dates, reply relationships, and statuses. Special Wiki markup is preserved literally. Interactive elements and revision history are not converted into separate local representations.
+
+On repeated runs, the script replaces only the previous export of the same root page. It downloads the entire tree into a temporary directory first, so an access or download failure preserves the previous completed export.

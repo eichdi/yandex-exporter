@@ -1,13 +1,15 @@
-# Инструкции по работе с проектом
+# Project Instructions
 
-- Полностью прочитайте задачу; изучите реализацию, похожий код и CONTRIBUTING.md.
-- Не придумывайте требования и не выполняйте несвязанный рефакторинг. Предлагайте такие изменения отдельно.
-- Делайте изменения как можно меньше в разумных пределах и сохраняйте чужую работу.
-- Следуйте существующему стилю Python: snake_case для функций, CamelCase для классов, UPPER_CASE для констант и отступ в 4 пробела.
-- Не встраивайте токены, реальные ID организаций, внутренние URL и пользовательские данные в исходники, примеры и тесты.
-- Не раскрывайте секреты в ошибках и логах. Стандартный вывод MCP (stdout) предназначен только для протокола; направляйте диагностику в stderr.
-- Перед изменением поведения добавьте регрессионный тест. Не ослабляйте и не удаляйте тесты только ради успешного прохождения проверок.
-- Перед завершением задачи запустите `scripts/verify-mcp.sh`, просмотрите итоговый diff и исправьте найденные проблемы. Повторите затронутые проверки.
-- Сообщайте фактические результаты и ограничения проверки. Не объявляйте задачу завершённой, пока остаются известные относящиеся к ней сбои.
+English | [Русский](AGENTS-RU.md)
 
-Эти инструкции самодостаточны: личные файлы из домашнего каталога разработчика не требуются.
+- Read the entire task; inspect the implementation, similar code, and CONTRIBUTING.md.
+- Do not invent requirements or perform unrelated refactoring. Propose such changes separately.
+- Keep changes as small as reasonably possible and preserve other people's work.
+- Follow the existing Python style: snake_case for functions, CamelCase for classes, UPPER_CASE for constants, and 4-space indentation.
+- Do not embed tokens, real organization IDs, internal URLs, or user data in source code, examples, or tests.
+- Do not expose secrets in errors or logs. MCP stdout is reserved for the protocol; send diagnostics to stderr.
+- Before changing behavior, add a regression test. Do not weaken or remove tests just to make verification pass.
+- Before completing the task, run `scripts/verify-mcp.sh`, review the final diff, and fix any issues found. Rerun the affected checks.
+- Report actual results and verification limitations. Do not declare the task complete while known relevant failures remain.
+
+These instructions are self-contained: no personal files from the developer's home directory are required.

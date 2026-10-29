@@ -1,12 +1,14 @@
-# MCP для Yandex Tracker и Wiki
+# MCP for Yandex Tracker and Wiki
 
-Локальный MCP-сервер возвращает данные задач и страниц прямо в чат для анализа.
-Работает через stdio, используя официальный Python MCP SDK.
+English | [Русский](README-mcp-RU.md)
 
-## Установка
+The local MCP server returns issue and page data directly to the chat for analysis.
+It runs over stdio using the official Python MCP SDK.
 
-Требуется Python **3.10 или новее**. В этом проекте сервер проверен на Python 3.12.
-Системный `python3` на macOS может быть старее — указывайте нужную версию явно.
+## Installation
+
+Python **3.10 or newer** is required. The server has been verified on Python 3.12 in this project.
+The system `python3` on macOS may be older; specify the required version explicitly.
 
 ```bash
 cd yandex-exporter
@@ -14,18 +16,18 @@ python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements-mcp.txt
 ```
 
-Существующие файловые экспортёры запускаются отдельно и не требуют MCP SDK.
+The existing file exporters run separately and do not require the MCP SDK.
 
-## Подключение к MCP-клиенту
+## Connecting an MCP Client
 
-В настройках локального MCP-сервера укажите:
+In your local MCP server settings, specify:
 
-- Имя: `yandex-reader`.
-- Команда: `/absolute/path/to/yandex-exporter/.venv/bin/python`.
-- Аргументы: `/absolute/path/to/yandex-exporter/mcp_server.py`.
-- Окружение: `YANDEX_TRACKER_OAUTH_TOKEN` с вашим токеном и `IDENTITY_HUB` вашей организации.
+- Name: `yandex-reader`.
+- Command: `/absolute/path/to/yandex-exporter/.venv/bin/python`.
+- Arguments: `/absolute/path/to/yandex-exporter/mcp_server.py`.
+- Environment: `YANDEX_TRACKER_OAUTH_TOKEN` with your token and `IDENTITY_HUB` with your organization ID.
 
-Для клиентов с JSON-конфигурацией `mcpServers` пример выглядит так:
+For clients using a JSON `mcpServers` configuration:
 
 ```json
 {
@@ -34,103 +36,103 @@ python3.12 -m venv .venv
       "command": "/absolute/path/to/yandex-exporter/.venv/bin/python",
       "args": ["/absolute/path/to/yandex-exporter/mcp_server.py"],
       "env": {
-        "YANDEX_TRACKER_OAUTH_TOKEN": "ВАШ_ТОКЕН",
-        "IDENTITY_HUB": "ID_ВАШЕЙ_ОРГАНИЗАЦИИ"
+        "YANDEX_TRACKER_OAUTH_TOKEN": "YOUR_TOKEN",
+        "IDENTITY_HUB": "YOUR_ORGANIZATION_ID"
       }
     }
   }
 }
 ```
 
-Замените `/absolute/path/to/yandex-exporter` на абсолютный путь к своей копии проекта,
-а `ID_ВАШЕЙ_ОРГАНИЗАЦИИ` — на ID своей организации.
-Замените `ВАШ_ТОКЕН` на готовый OAuth-токен Яндекса в локальных настройках клиента.
-Не отправляйте токен в чат. Используйте хранилище секретов клиента, если оно доступно.
-Поля и формат конфигурации зависят от клиента; значения команды, аргумента и окружения те же.
-Абсолютные пути позволяют запускать сервер из любого рабочего каталога.
+Replace `/absolute/path/to/yandex-exporter` with the absolute path to your project copy,
+and `YOUR_ORGANIZATION_ID` with your organization ID.
+Replace `YOUR_TOKEN` with your Yandex OAuth token in the client's local settings.
+Do not send the token in chat. Use the client's secret store if available.
+Configuration fields and formats vary by client; the command, argument, and environment values are the same.
+Absolute paths let the server start from any working directory.
 
-`IDENTITY_HUB` обязателен; значения по умолчанию нет.
-Один ID организации и один токен используются для Tracker и Wiki. У токена должны быть
-права на нужные задачи и страницы; для Wiki требуется `wiki:read`.
-Токен передаётся через окружение процесса, а не аргументы MCP-инструментов.
-Сервер не выполняет интерактивный вход, не обновляет токен и не читает `.env` автоматически.
-После изменения настроек перезапустите сервер через MCP-клиент.
+`IDENTITY_HUB` is required; there is no default value.
+The same organization ID and token are used for Tracker and Wiki. The token must have
+access to the required issues and pages; Wiki requires `wiki:read` permission.
+The token is passed through the process environment, not as a tool argument.
+The server does not perform interactive login, refresh tokens, or read `.env` automatically.
+After changing the settings, restart the server through your MCP client.
 
-Для ручного запуска из терминала с уже заданным окружением:
+To start it manually from a terminal with the environment already configured:
 
 ```bash
 .venv/bin/python mcp_server.py
 ```
 
-При успешном запуске сервер ждёт MCP-сообщений, поэтому обычного текстового приглашения нет.
-stdout предназначен для протокола; диагностические ошибки направляются в stderr.
-Без токена или ID организации процесс завершается с кодом 2 и пояснением о недостающей настройке.
-Права токена проверяются API при вызове инструмента.
+After a successful start, the server waits for MCP messages, so there is no regular text prompt.
+stdout is reserved for the protocol; diagnostics go to stderr.
+Without a token or organization ID, the process exits with code 2 and explains which setting is missing.
+Token permissions are checked by the API when a tool is called.
 
-## Инструменты
+## Tools
 
-| Инструмент | Аргумент | Данные |
+| Tool | Argument | Data |
 | --- | --- | --- |
-| `get_tracker_issue` | `issue_key`, например `ABC-123` | Одна задача: поля, полное описание, комментарии, метаданные вложений |
-| `list_tracker_children` | `issue_key` | Все непосредственные подзадачи: ключ, название и статус |
-| `get_tracker_issue_with_children` | `issue_key` | Корневая задача и все доступные подзадачи всех уровней с полным содержимым |
-| `get_wiki_page` | `url`, например `https://wiki.yandex.ru/space/page/` | Одна страница: исходный текст, атрибуты, владелец, комментарии и метаданные вложений |
-| `list_wiki_descendants` | `url` | Все доступные подстраницы всех уровней: ID, путь и название |
-| `get_wiki_page_with_children` | `url` | Корневая страница и все доступные подстраницы всех уровней с полным содержимым |
+| `get_tracker_issue` | `issue_key`, for example `ABC-123` | One issue: fields, full description, comments, attachment metadata |
+| `list_tracker_children` | `issue_key` | All direct child issues: key, title, and status |
+| `get_tracker_issue_with_children` | `issue_key` | The root issue and all accessible child issues at every level, with full content |
+| `get_wiki_page` | `url`, for example `https://wiki.yandex.ru/space/page/` | One page: source content, attributes, owner, comments, and attachment metadata |
+| `list_wiki_descendants` | `url` | All accessible descendant pages at every level: ID, path, and title |
+| `get_wiki_page_with_children` | `url` | The root page and all accessible descendants at every level, with full content |
 
-Все шесть инструментов выполняют только чтение в Яндексе. Результаты не сохраняются на диск.
-Вложения возвращаются **как метаданные**: файлы не скачиваются, содержимое PDF, изображений
-и других вложений не извлекается. Текст и комментарии сохраняются без пересказа и обрезания.
+All six tools perform read-only operations in Yandex. Results are not saved to disk.
+Attachments are returned **as metadata only**: files are not downloaded, and content is not extracted
+from PDFs, images, or other attachments. Text and comments are preserved without summarizing or truncating.
 
-Примеры запросов в чате после подключения сервера:
+Example chat requests after connecting the server:
 
-- «Прочитай задачу ABC-123 и проанализируй требования».
-- «Получи ABC-123 со всеми подзадачами и найди противоречия».
-- «Прочитай страницу https://wiki.yandex.ru/space/page/ со всеми подстраницами».
+- “Read issue ABC-123 and analyze its requirements.”
+- “Retrieve ABC-123 with all child issues and identify contradictions.”
+- “Read https://wiki.yandex.ru/space/page/ with all descendant pages.”
 
-## Форматы результатов
+## Result Formats
 
-Данные доступны как `structuredContent` и как JSON в текстовом содержимом ответа MCP.
+Data is available as `structuredContent` and as JSON in the MCP response's text content.
 
-- Задача: `key`, `summary`, `description`, `status`, `issue_type`, `priority`, `assignee`,
+- Issue: `key`, `summary`, `description`, `status`, `issue_type`, `priority`, `assignee`,
   `author`, `created_at`, `updated_at`, `deadline`, `comments`, `attachments`, `children`.
-  В обычном чтении `children` пуст; в команде `with_children` содержит такие же объекты рекурсивно.
-  Комментарии Tracker содержат текст, как в существующем экспортёре.
-- Список задач: `parent_key` и `children`, где каждый элемент содержит `key`, `summary`, `status`.
-- Страница: `id`, `slug`, `title`, `page_type`, `content`, `attributes`, `owner`, `comments`, `attachments`.
-  Комментарии Wiki включают авторов, даты, ID и связи ответов. Вложение содержит `page_id`.
-- Список страниц: `root_id`, `root_slug`, `descendants` с `id`, `slug`, `title`.
-  Wiki API выдаёт в списке потомков только ID и путь, поэтому названия читаются отдельными запросами.
-- Дерево Wiki: `root_id`, `root_slug`, `pages_by_slug`, `parent_by_slug`, `path_only_slugs`.
-  В `pages_by_slug` находятся полные страницы; `parent_by_slug` задаёт иерархию, у корня родитель `null`.
-  `path_only_slugs` явно перечисляет промежуточные пути, для которых API не предоставил страницы.
+  For a single issue, `children` is empty; a `with_children` call populates it recursively with the same objects.
+  Tracker comments contain text, as in the existing exporter.
+- Issue list: `parent_key` and `children`, where each item contains `key`, `summary`, and `status`.
+- Page: `id`, `slug`, `title`, `page_type`, `content`, `attributes`, `owner`, `comments`, `attachments`.
+  Wiki comments include authors, dates, IDs, and reply relationships. An attachment contains `page_id`.
+- Page list: `root_id`, `root_slug`, and `descendants` with `id`, `slug`, and `title`.
+  The Wiki API provides only IDs and paths in its descendants list, so titles are retrieved separately.
+- Wiki tree: `root_id`, `root_slug`, `pages_by_slug`, `parent_by_slug`, `path_only_slugs`.
+  `pages_by_slug` contains full pages; `parent_by_slug` defines the hierarchy, with `null` for the root's parent.
+  `path_only_slugs` explicitly lists intermediate paths for which the API did not provide a page.
 
-Вызовы `with_children` не ограничивают глубину и не сокращают данные. Очень большое дерево
-может превысить лимит сообщения или контекста самого MCP-клиента, а загрузка может занять
-больше его таймаута. В этом случае используйте список потомков и отдельное чтение нужных
-объектов; при необходимости увеличьте таймаут вызова в клиенте.
+The `with_children` calls do not limit depth or truncate data. A very large tree
+may exceed the MCP client's message or context limit, and loading may take
+longer than its timeout. In that case, list descendants and read the required
+objects individually; increase the client's call timeout if necessary.
 
-Неверные аргументы, HTTP 400/401/403/404/429/5xx и ошибки чтения возвращаются как ошибки
-MCP-инструмента (`isError: true`). Если не удалось прочитать обнаруженного потомка,
-команда полного дерева сообщает ошибку целиком. Скрытые для пользователя объекты API
-может не перечислять, поэтому «все» означает все доступные текущему токену объекты.
-API-запросы имеют таймаут 30 секунд. Ошибки инструментов не завершают MCP-сессию.
+Invalid arguments, HTTP 400/401/403/404/429/5xx responses, and read failures are returned as
+MCP tool errors (`isError: true`). If a discovered descendant cannot be read,
+the entire tree call reports an error. The API may omit objects hidden from the user,
+so “all” means all objects accessible to the current token.
+API requests have a 30-second timeout. Tool errors do not terminate the MCP session.
 
-## Проверки
+## Verification
 
 ```bash
 .venv/bin/python -m pip install -r requirements-dev.txt
 scripts/verify-mcp.sh
 ```
 
-Скрипт запускает все модульные и интеграционные тесты, проверку покрытия новой логики (не менее 80%),
-компиляцию Python и согласованность установленных зависимостей.
-Интеграционные тесты запускают настоящий MCP-процесс через stdio с управляемыми ответами API,
-поэтому для них не требуются токен Яндекса и сетевой доступ.
-Живой доступ к Tracker и Wiki проверяется отдельно и требует действующего токена.
+The script runs all unit and integration tests, checks coverage of the new logic (at least 80%),
+compiles Python files, and checks installed dependency consistency.
+Integration tests launch a real MCP process over stdio with controlled API responses,
+so they do not require a Yandex token or network access.
+Live access to Tracker and Wiki is verified separately and requires a valid token.
 
-Источники:
+Sources:
 
-- [Авторизация MCP для stdio](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization).
-- [Официальный Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk/tree/v1.26.0).
-- [Список подстраниц Wiki](https://yandex.ru/support/wiki/ru/api-ref/pages/pages__descendants_by_id).
+- [MCP authorization for stdio](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization).
+- [Official Python MCP SDK](https://github.com/modelcontextprotocol/python-sdk/tree/v1.26.0).
+- [Wiki descendants API](https://yandex.ru/support/wiki/ru/api-ref/pages/pages__descendants_by_id).

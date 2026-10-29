@@ -1,8 +1,10 @@
-# Участие в разработке
+# Contributing
 
-## Окружение и проверки
+English | [Русский](CONTRIBUTING-RU.md)
 
-Используйте Python 3.10+; для воспроизводимых проверок использовался Python 3.12:
+## Environment and Verification
+
+Use Python 3.10+; Python 3.12 was used for reproducible verification:
 
 ```bash
 python3.12 -m venv .venv
@@ -10,20 +12,20 @@ python3.12 -m venv .venv
 scripts/verify-mcp.sh
 ```
 
-Скрипт запускает все модульные и интеграционные тесты, проверяет покрытие `yandex_mcp` и `mcp_server` с порогом 80%, компилирует Python-файлы и выполняет `pip check`. Порог покрытия не распространяется на файловые экспортёры. Отдельного этапа сборки проекта нет.
+The script runs all unit and integration tests, checks coverage of `yandex_mcp` and `mcp_server` against an 80% threshold, compiles Python files, and runs `pip check`. The coverage threshold does not apply to the file exporters. There is no separate project build step.
 
-Интеграционные тесты используют управляемые ответы API и реальный MCP-процесс через stdio. Для них не требуются токен, организация или доступ к Яндексу. Живая проверка выполняется отдельно на собственных тестовых данных с настройками окружения из README; не включайте токены и содержимое закрытых задач в отчёты.
+Integration tests use controlled API responses and a real MCP process over stdio. They do not require a token, an organization, or access to Yandex. Live verification is performed separately using your own test data and the environment settings described in the README; do not include tokens or private issue content in reports.
 
-Если окружение расположено в другом месте, задайте `MCP_PYTHON=/absolute/path/to/python`. В Windows запускайте команды из скрипта через свою оболочку или используйте POSIX-окружение.
+If your environment is located elsewhere, set `MCP_PYTHON=/absolute/path/to/python`. On Windows, run the commands from the script in your shell or use a POSIX environment.
 
-## Внесение изменений
+## Making Changes
 
-Перед изменением изучите текущую реализацию и похожий код. Сохраняйте небольшой объём изменений, обсуждайте новые требования и несвязанный рефакторинг отдельно. Следуйте существующему стилю Python; комментарии, строки документации (docstring) и диагностические сообщения пишите на английском языке.
+Before making changes, inspect the current implementation and similar code. Keep changes small, and discuss new requirements and unrelated refactoring separately. Follow the existing Python style; write comments, docstrings, and diagnostic messages in English.
 
-При изменении поведения добавляйте тесты успешных и ошибочных сценариев. Модульные тесты размещайте в `tests/`, интеграционные — в `it/`. Не отключайте и не ослабляйте тесты только ради успешного прохождения проверок. После внесения изменений запустите весь скрипт проверки и просмотрите итоговый diff.
+When changing behavior, add tests for successful and error scenarios. Unit tests belong in `tests/`, and integration tests belong in `it/`. Do not disable or weaken tests just to make verification pass. After making changes, run the entire verification script and review the final diff.
 
-Используйте содержательные названия веток, например `fix/organization-settings`, и короткие осмысленные сообщения коммитов на английском языке. Добавляйте номер задачи GitHub, если она существует; корпоративный номер задачи не требуется.
+Use descriptive branch names, such as `fix/organization-settings`, and short, meaningful commit messages in English. Include a GitHub issue number when one exists; a corporate task number is not required.
 
-В запросе на включение изменений (pull request) опишите проблему, получившееся поведение и выполненные проверки. В сообщениях об ошибках укажите версию Python, операционную систему, команду запуска и обезличенный текст ошибки. Используйте вымышленные задачи, организации и вложения в примерах и тестах.
+In pull requests, describe the problem, the resulting behavior, and the checks performed. For bug reports, include the Python version, operating system, command used, and sanitized error text. Use fictional issues, organizations, and attachments in examples and tests.
 
-GitHub Actions и статический анализ пока не настроены; запускайте локальные проверки самостоятельно.
+GitHub Actions and static analysis are not configured yet; run the local checks yourself.

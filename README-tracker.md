@@ -1,75 +1,79 @@
-# Экспорт задач Yandex Tracker
+# Export Yandex Tracker Issues
 
-`export_tracker.py` сохраняет выбранную задачу, всех доступных подзадач любых уровней, полные тексты комментариев и вложения в локальные файлы. Запросы к Tracker выполняются только для чтения.
+English | [Русский](README-tracker-RU.md)
 
-## Подготовка
+`export_tracker.py` saves the selected issue, all accessible child issues at any depth, full comment text, and attachments to local files. Requests to Tracker are read-only.
 
-Требуется Python **3.10 или новее**. Скрипт использует стандартную библиотеку Python; установка MCP SDK для файлового экспорта не нужна.
+## Setup
 
-Из каталога проекта создайте окружение:
+Python **3.10 or newer** is required. The script uses the Python standard library; the MCP SDK is not required for file exports.
+
+Create an environment from the project directory:
 
 ```bash
 python3.12 -m venv .venv
 ```
 
-Если Python установлен под другим именем, используйте команду своей версии Python 3.10+. Для Windows путь к интерпретатору — `.venv\Scripts\python.exe`; примеры ниже рассчитаны на POSIX shell.
+If Python is installed under a different name, use the command for your Python 3.10+ installation. On Windows, the interpreter path is `.venv\Scripts\python.exe`; the examples below assume a POSIX shell.
 
-Задайте обязательные переменные окружения:
+Set the required environment variables:
 
 ```bash
-export YANDEX_TRACKER_OAUTH_TOKEN="ВАШ_OAUTH_ТОКЕН"
-export IDENTITY_HUB="ID_ВАШЕЙ_ОРГАНИЗАЦИИ"
+export YANDEX_TRACKER_OAUTH_TOKEN="YOUR_OAUTH_TOKEN"
+export IDENTITY_HUB="YOUR_ORGANIZATION_ID"
 ```
 
-У токена должно быть право `tracker:read`, а у пользователя — доступ к экспортируемым задачам. `IDENTITY_HUB` передаётся в заголовке `X-Cloud-Org-ID`; организации с другим типом организационного заголовка сейчас не поддерживаются. Значения организации по умолчанию нет.
+The token must have `tracker:read` permission, and the user must have access to the exported issues. `IDENTITY_HUB` is sent in the `X-Cloud-Org-ID` header; other organization header types are not currently supported. There is no default organization value.
 
-Получение доступа и загрузка настроек из локального `.env` описаны в [общем README](README.md#авторизация). Скрипт не читает `.env` автоматически. Не сохраняйте настоящий токен в документации или коммитах.
+Access setup and loading settings from a local `.env` file are described in the [main README](README.md#authentication). The script does not read `.env` automatically. Do not save real tokens in documentation or commits.
 
-## Запуск
+## Usage
 
 ```bash
 .venv/bin/python export_tracker.py ABC-123 exports/
 ```
 
-Первый аргумент — ключ корневой задачи, второй — необязательный каталог назначения. Если каталог не указан, экспорт создаётся в текущей директории. Внутри репозитория указывайте `exports/`: этот каталог исключён из Git. Путь с пробелами заключайте в кавычки.
+The first argument is the root issue key; the second is an optional output directory. If omitted, the export is created in the current directory. Inside the repository, use `exports/`, which is excluded from Git. Quote paths that contain spaces.
 
-Справка по аргументам:
+Argument help:
 
 ```bash
 .venv/bin/python export_tracker.py --help
 ```
 
-## Результат
+## Output
 
 ```text
 exports/
-  ABC-123 — Название задачи/
-    ABC-123 — Название задачи.md
+  ABC-123 — Issue title/
+    ABC-123 — Issue title.md
     Вложения/
       example.pdf
     Подзадачи/
-      ABC-124 — Название подзадачи/
-        ABC-124 — Название подзадачи.md
+      ABC-124 — Child issue title/
+        ABC-124 — Child issue title.md
         Вложения/
         Подзадачи/
 ```
 
-Для каждой задачи Markdown-файл содержит ключ и название, статус, тип, приоритет, исполнителя, автора, даты создания и обновления, дедлайн, описание и полные тексты комментариев. Комментарии нумеруются; отдельные метаданные авторов и дат комментариев не экспортируются.
+The service directory names are in Russian: `Вложения/` contains attachments, and `Подзадачи/` contains child issues.
 
-Вложения скачиваются в каталог своей задачи. Недопустимые символы в именах заменяются, а совпадающие имена вложений получают числовые суффиксы. Каталоги `Вложения/` и `Подзадачи/` создаются даже при отсутствии содержимого.
+For each issue, the Markdown file contains its key and title, status, type, priority, assignee, author, creation and update dates, deadline, description, and full comment text. Comments are numbered; separate comment author and date metadata is not exported.
 
-## Повторный запуск и ошибки
+Attachments are downloaded into their owning issue's directory. Invalid filename characters are replaced, and duplicate attachment names receive numeric suffixes. The `Вложения/` and `Подзадачи/` directories are created even when empty.
 
-Повторный запуск удаляет предыдущий экспорт с тем же ключом корневой задачи в каталоге назначения, включая вариант с прежним названием. Удаление происходит перед записью новых файлов и скачиванием вложений. При сбое на этом этапе прежняя выгрузка не восстанавливается, а новая может остаться неполной. Сохраните нужную копию перед повторным экспортом.
+## Repeated Runs and Errors
 
-Коды завершения:
+A repeated run deletes the previous export with the same root issue key in the output directory, including an export using the old title. Deletion happens before writing new files and downloading attachments. If this stage fails, the previous export is not restored, and the new export may remain incomplete. Keep a copy of any export you need before running it again.
 
-| Код | Значение |
+Exit codes:
+
+| Code | Meaning |
 | --- | --- |
-| `0` | Экспорт завершён |
-| `1` | Ошибка API или файловой системы |
-| `2` | Ошибка аргументов либо отсутствуют обязательные настройки |
+| `0` | Export completed |
+| `1` | API or filesystem error |
+| `2` | Invalid arguments or missing required settings |
 
-При ошибке проверьте настройки окружения, доступ пользователя к задаче и права записи в каталог назначения. Диагностика направляется в stderr. Скрипт не выполняет интерактивный вход и не обновляет токен.
+If an error occurs, check the environment settings, the user's access to the issue, and write permissions for the output directory. Diagnostics go to stderr. The script does not perform interactive login or refresh tokens.
 
-Для чтения задач прямо в MCP-клиенте используйте [инструкцию MCP](README-mcp.md). Для экспорта страниц — [инструкцию Wiki](README-wiki.md).
+For reading issues directly in an MCP client, see the [MCP guide](README-mcp.md). For page exports, see the [Wiki guide](README-wiki.md).
