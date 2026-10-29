@@ -6,9 +6,9 @@ Read Yandex Tracker issues and Yandex Wiki pages using local Python utilities:
 
 - **Tracker CLI** — export an issue, all accessible child issues, comments, and attachments to Markdown. [Details](README-tracker.md).
 - **Wiki CLI** — export a page tree, source content, metadata, comments, and attachments. [Details](README-wiki.md).
-- **MCP server** — read issues and pages directly in an MCP client; attachments are returned as metadata only. [Setup](README-mcp.md).
+- **MCP server** — read issues and pages directly in an MCP client; attachment contents are available on demand as text, images or original files. [Setup](README-mcp.md).
 
-All modes perform read-only operations in Yandex. The CLIs save data to local disk.
+All modes perform read-only operations in Yandex. The CLIs save data to local disk; the MCP server returns data and attachment contents to the client without creating local exports.
 
 ## Requirements and Installation
 

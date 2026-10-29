@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import subprocess
 import sys
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TOOLS = {
     "get_tracker_issue", "list_tracker_children", "get_tracker_issue_with_children",
     "get_wiki_page", "list_wiki_descendants", "get_wiki_page_with_children",
+    "get_tracker_attachment", "get_wiki_attachment",
 }
 
 
@@ -55,7 +57,7 @@ class MCPProtocolTest(unittest.TestCase):
         return result.structuredContent
 
     @protocol_test
-    async def test_exposes_exactly_six_read_only_tools_with_typed_arguments(self):
+    async def test_exposes_eight_read_only_tools_with_typed_arguments(self):
         self.assertEqual("yandex-reader", self.initialization.serverInfo.name)
         tools = (await self.session.list_tools()).tools
         self.assertEqual(TOOLS, {tool.name for tool in tools})
@@ -64,7 +66,11 @@ class MCPProtocolTest(unittest.TestCase):
             self.assertFalse(tool.annotations.destructiveHint)
             self.assertTrue(tool.annotations.idempotentHint)
             argument = "issue_key" if "tracker" in tool.name else "url"
-            self.assertEqual([argument], tool.inputSchema["required"])
+            required = [argument] + (["attachment_id"] if tool.name.endswith("_attachment") else [])
+            self.assertEqual(required, tool.inputSchema["required"])
+            if "attachment_id" in required:
+                expected_type = "string" if "tracker" in tool.name else "integer"
+                self.assertEqual(expected_type, tool.inputSchema["properties"]["attachment_id"]["type"])
             self.assertEqual("string", tool.inputSchema["properties"][argument]["type"])
 
     @protocol_test
@@ -146,6 +152,59 @@ class MCPProtocolTest(unittest.TestCase):
         self.stderr.flush()
         self.stderr.seek(0)
         self.assertNotIn("fixture-secret", self.stderr.read())
+
+    @protocol_test
+    async def test_attachment_tools_transport_text_images_and_original_files_without_disk_output(self):
+        sources = (
+            ('get_tracker_attachment', {'issue_key': 'ABC-8'}, ('42', '43', '44')),
+            ('get_wiki_attachment', {'url': 'https://wiki.yandex.ru/space/root/'}, (201, 200, 202)),
+        )
+        for name, arguments, identifiers in sources:
+            for identifier, representation, mime in zip(
+                identifiers, ('text', 'image', 'file'), ('application/yaml', 'image/png', 'application/pdf')
+            ):
+                with self.subTest(tool=name, representation=representation):
+                    result = await self.session.call_tool(name, {**arguments, 'attachment_id': identifier})
+                    self.assertFalse(result.isError, result.content)
+                    self.assertEqual(representation, result.structuredContent['representation'])
+                    self.assertEqual(result.structuredContent, json.loads(result.content[0].text))
+                    block = result.content[1]
+                    if representation == 'text':
+                        self.assertEqual('text', block.type)
+                        self.assertEqual('openapi: 3.0.0\n', block.text)
+                    elif representation == 'image':
+                        self.assertEqual('image', block.type)
+                        self.assertEqual(mime, block.mimeType)
+                        self.assertTrue(base64.b64decode(block.data).startswith(b'\x89PNG\r\n\x1a\n'))
+                    else:
+                        self.assertEqual('resource', block.type)
+                        self.assertEqual(mime, block.resource.mimeType)
+                        self.assertEqual(b'%PDF-1.4\noriginal\x00\xff', base64.b64decode(block.resource.blob))
+        self.assertEqual([], list(Path(self.work).iterdir()))
+
+    @protocol_test
+    async def test_attachment_failures_preserve_session_and_redact_secrets(self):
+        cases = (
+            ('get_tracker_attachment', {'issue_key': 'ABC-8', 'attachment_id': '999'}, 'not found'),
+            ('get_tracker_attachment', {'issue_key': 'ABC-8', 'attachment_id': '46'}, '403'),
+            ('get_tracker_attachment', {'issue_key': 'ABC-8', 'attachment_id': '47'}, '[REDACTED]'),
+            ('get_wiki_attachment', {'url': 'https://wiki.yandex.ru/space/root/', 'attachment_id': 999}, 'not found'),
+            ('get_wiki_attachment', {'url': 'https://wiki.yandex.ru/space/root/', 'attachment_id': 203}, 'not downloadable'),
+        )
+        for name, arguments, detail in cases:
+            with self.subTest(tool=name, detail=detail):
+                result = await self.session.call_tool(name, arguments)
+                self.assertTrue(result.isError)
+                self.assertIn(detail, result.content[0].text)
+                self.assertNotIn('fixture-secret', result.model_dump_json())
+        result = await self.session.call_tool('get_tracker_attachment', {'issue_key': 'ABC-8', 'attachment_id': '45'})
+        self.assertFalse(result.isError)
+        self.assertIn('decode', result.structuredContent['reason'])
+        self.assertEqual(b'\xff\x80original', base64.b64decode(result.content[1].resource.blob))
+        self.assertEqual(TOOLS, {tool.name for tool in (await self.session.list_tools()).tools})
+        self.stderr.flush()
+        self.stderr.seek(0)
+        self.assertNotIn('fixture-secret', self.stderr.read())
 
 
 class MCPStartupTest(unittest.TestCase):

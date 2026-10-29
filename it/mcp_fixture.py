@@ -1,5 +1,6 @@
 """Launch the production server with deterministic API responses over stdio."""
 
+import base64
 import io
 import json
 import runpy
@@ -16,9 +17,20 @@ from export_tracker import TrackerClient
 from export_wiki import WikiClient
 
 
+ATTACHMENT_DATA = {
+    '42': ('api.yaml', b'openapi: 3.0.0\n'),
+    '43': ('diagram.png', base64.b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=')),
+    '44': ('document.pdf', b'%PDF-1.4\noriginal\x00\xff'),
+    '45': ('legacy.txt', b'\xff\x80original'),
+    '46': ('denied.txt', b''),
+    '47': ('failure.txt', b''),
+}
+
+
 class Response:
     def __init__(self, payload, headers=None):
-        self.payload = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.payload = payload if isinstance(payload, bytes) else json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.headers = headers or {}
 
     def __enter__(self):
@@ -65,6 +77,13 @@ def tracker_response(request, path, query):
         raise HTTPError(request.full_url, int(key[4:]), "failed", {}, io.BytesIO())
     if key == "ABC-700":
         raise RuntimeError("Unexpected fixture-secret")
+    if '/attachments/' in path:
+        identifier = path.split('/')[5]
+        if identifier == '46':
+            raise HTTPError(request.full_url, 403, 'denied', {}, io.BytesIO())
+        if identifier == '47':
+            raise URLError('download failed with fixture-secret')
+        return Response(ATTACHMENT_DATA[identifier][1])
     if path.endswith("/_search"):
         parent = json.loads(request.data)["filter"]["parent"]
         children = {"ABC-1": ["ABC-2", "ABC-4"], "ABC-2": ["ABC-3"], "ABC-3": [], "ABC-4": [],
@@ -82,7 +101,8 @@ def tracker_response(request, path, query):
     return Response({"key": key, "summary": f"Task {key}",
                      "description": "Текст задачи\n" + "полный текст " * 6000,
                      "status": {"display": "Open"}, "assignee": {"display": "Alice"},
-                     "attachments": [{"id": "42", "display": "api.yaml"}]})
+                     "attachments": ([{"id": identifier, "display": name} for identifier, (name, _) in ATTACHMENT_DATA.items()]
+                                     if key == "ABC-8" else [{"id": "42", "display": "api.yaml"}])})
 
 
 def wiki_response(request, path, query):
@@ -105,9 +125,15 @@ def wiki_response(request, path, query):
     if path.endswith("/comments"):
         return Response({"results": [{"id": 100, "body": "Комментарий Wiki", "author": {"display_name": "Alice"},
                                       "created_at": "2026-10-28T10:00:00Z"}]})
+    if path.endswith('/download'):
+        identifier = int(path.split('/')[5])
+        return Response(ATTACHMENT_DATA[{200: '43', 201: '42', 202: '44'}[identifier]][1])
     if path.endswith("/attachments"):
         return Response({"results": [{"id": 200, "name": "diagram.png", "mimetype": "image/png",
-                                      "is_downloadable": True}]})
+                                      "is_downloadable": True},
+                                     {"id": 201, "name": "api.yaml", "mimetype": "application/yaml", "is_downloadable": True},
+                                     {"id": 202, "name": "document.pdf", "mimetype": "application/pdf", "is_downloadable": True},
+                                     {"id": 203, "name": "locked.pdf", "mimetype": "application/pdf", "is_downloadable": False}]})
     return Response(wiki_page(identifier))
 
 

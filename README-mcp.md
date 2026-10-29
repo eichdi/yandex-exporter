@@ -56,7 +56,7 @@ The same organization ID and token are used for Tracker and Wiki. The token must
 access to the required issues and pages; Wiki requires `wiki:read` permission.
 The token is passed through the process environment, not as a tool argument.
 The server does not perform interactive login, refresh tokens, or read `.env` automatically.
-After changing the settings, restart the server through your MCP client.
+After changing the settings, restart the server through your MCP client. After updating the server code, restart or reconnect it in the client to refresh the available tools, including the attachment tools.
 
 To start it manually from a terminal with the environment already configured:
 
@@ -77,22 +77,48 @@ Token permissions are checked by the API when a tool is called.
 | `list_tracker_children` | `issue_key` | All direct child issues: key, title, and status |
 | `get_tracker_issue_with_children` | `issue_key` | The root issue and all accessible child issues at every level, with full content |
 | `get_wiki_page` | `url`, for example `https://wiki.yandex.ru/space/page/` | One page: source content, attributes, owner, comments, and attachment metadata |
+| `get_tracker_attachment` | `issue_key`, `attachment_id` (string) | One issue attachment: text, native image or original file |
+| `get_wiki_attachment` | `url`, `attachment_id` (integer) | One page attachment: text, native image or original file |
 | `list_wiki_descendants` | `url` | All accessible descendant pages at every level: ID, path, and title |
 | `get_wiki_page_with_children` | `url` | The root page and all accessible descendants at every level, with full content |
 
-All six tools perform read-only operations in Yandex. Results are not saved to disk.
-Attachments are returned **as metadata only**: files are not downloaded, and content is not extracted
-from PDFs, images, or other attachments. Text and comments are preserved without summarizing or truncating.
+All eight tools perform read-only operations in Yandex. Results are not saved to disk.
+Issue/page tools return attachment metadata. During analysis, the agent can use the attachment tools
+to download selected attachments by their IDs from that metadata, including attachments on child issues/pages.
+Text and comments are preserved without summarizing or truncating.
+
+Attachment tools return original content according to the file type:
+
+- Text files (TXT, Markdown, YAML, JSON/JSONL, XML, CSV/TSV, TOML, configuration files and common source files)
+  are returned as native MCP text blocks. Text MIME types and JSON/XML-related MIME types are also recognised.
+- Images are returned as native MCP image blocks, with their original bytes and MIME type. No conversion or OCR is performed;
+  the client/model determines which image formats it can view.
+- All other files, including PDF, Office documents and archives, are returned unchanged as embedded binary MCP resources
+  (`BlobResourceContents`, base64 transport encoding). The server does not extract text, unpack files or execute their contents.
+
+Text decoding supports UTF-8 and BOM-marked UTF-16/UTF-32. If decoding fails, the original file is returned
+as a binary resource with an explicit `reason`; bytes are never replaced or silently dropped.
+Unknown file types are returned as original binary resources. A successful binary transfer does not mean
+the client/model can interpret that format; binary-resource support depends on the MCP client.
+Large attachments may exceed the client's message/context limits. Attachments are not silently truncated.
 
 Example chat requests after connecting the server:
 
 - “Read issue ABC-123 and analyze its requirements.”
+- “Analyze issue ABC-123, including the contents of its attachments.”
 - “Retrieve ABC-123 with all child issues and identify contradictions.”
 - “Read https://wiki.yandex.ru/space/page/ with all descendant pages.”
 
+Example: after reading `ABC-123`, call `get_tracker_attachment(issue_key="ABC-123", attachment_id="42")`.
+For Wiki, call `get_wiki_attachment(url="https://wiki.yandex.ru/space/page/", attachment_id=200)`.
+Use actual IDs from the issue/page attachment metadata. The attachment must belong to the specified issue/page; an unknown ID or a Wiki attachment marked as non-downloadable returns a tool error.
+
 ## Result Formats
 
-Data is available as `structuredContent` and as JSON in the MCP response's text content.
+Issue/page data is available as `structuredContent` and as JSON in the MCP response's text content.
+Attachment results have metadata in `structuredContent` and in the first text block: `name`, `mime_type`,
+`size` (original bytes), `uri`, `representation` (`text`, `image` or `file`), and optional `reason`.
+The next content block contains the actual text/image/original binary resource; binary/image data is not duplicated in JSON metadata.
 
 - Issue: `key`, `summary`, `description`, `status`, `issue_type`, `priority`, `assignee`,
   `author`, `created_at`, `updated_at`, `deadline`, `comments`, `attachments`, `children`.
@@ -125,7 +151,7 @@ API requests have a 30-second timeout. Tool errors do not terminate the MCP sess
 scripts/verify-mcp.sh
 ```
 
-The script runs all unit and integration tests, checks coverage of the new logic (at least 80%),
+The script runs all unit and integration tests, checks coverage of the attachment adapter and reader/server logic (at least 80%),
 compiles Python files, and checks installed dependency consistency.
 Integration tests launch a real MCP process over stdio with controlled API responses,
 so they do not require a Yandex token or network access.

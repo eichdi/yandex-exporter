@@ -12,7 +12,7 @@ export PIP_NO_CACHE_DIR=1
 export COVERAGE_FILE="$verification_dir/coverage"
 export PYTHONPYCACHEPREFIX="$verification_dir/pycache"
 
-"$python_bin" -m coverage run --branch --source=yandex_mcp,mcp_server -m unittest discover -v
+"$python_bin" -m coverage run --branch --source=attachment_content,yandex_mcp,mcp_server -m unittest discover -v
 "$python_bin" -m coverage report --fail-under=80 -m
-"$python_bin" -m compileall -q export_tracker.py export_wiki.py yandex_mcp.py mcp_server.py tests it
+"$python_bin" -m compileall -q attachment_content.py export_tracker.py export_wiki.py yandex_mcp.py mcp_server.py tests it
 "$python_bin" -m pip check

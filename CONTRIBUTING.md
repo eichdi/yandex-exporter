@@ -12,7 +12,7 @@ python3.12 -m venv .venv
 scripts/verify-mcp.sh
 ```
 
-The script runs all unit and integration tests, checks coverage of `yandex_mcp` and `mcp_server` against an 80% threshold, compiles Python files, and runs `pip check`. The coverage threshold does not apply to the file exporters. There is no separate project build step.
+The script runs all unit and integration tests, checks coverage of `attachment_content`, `yandex_mcp` and `mcp_server` against an 80% threshold, compiles Python files, and runs `pip check`. The coverage threshold does not apply to the file exporters. There is no separate project build step.
 
 Integration tests use controlled API responses and a real MCP process over stdio. They do not require a token, an organization, or access to Yandex. Live verification is performed separately using your own test data and the environment settings described in the README; do not include tokens or private issue content in reports.
 

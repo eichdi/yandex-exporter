@@ -7,7 +7,7 @@ from functools import wraps
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
-from mcp.types import ToolAnnotations
+from mcp.types import CallToolResult, ToolAnnotations
 
 from export_tracker import TrackerError
 from export_wiki import WikiError
@@ -16,6 +16,14 @@ from yandex_mcp import YandexReader
 
 LOGGER = logging.getLogger(__name__)
 TOOL_DESCRIPTIONS = {
+    "get_tracker_attachment": (
+        "Read one attachment from a Tracker issue using an ID from its attachment metadata. "
+        "Returns text files as text, images as native images, and all other files as original binary resources."
+    ),
+    "get_wiki_attachment": (
+        "Read one attachment from a Wiki page using an ID from its attachment metadata. "
+        "Returns text files as text, images as native images, and all other files as original binary resources."
+    ),
     "get_tracker_issue": "Read one Tracker issue by key, including full description, comments and attachment metadata.",
     "list_tracker_children": "List direct child issues by parent key, with keys, summaries and statuses.",
     "get_tracker_issue_with_children": (
@@ -45,7 +53,7 @@ def safe_error(error: Exception, reader: YandexReader) -> str:
 
 def tool_handler(method, reader: YandexReader):
     @wraps(method)
-    def read(*args, **kwargs) -> dict:
+    def read(*args, **kwargs) -> dict | CallToolResult:
         try:
             return method(*args, **kwargs)
         except Exception as error:
@@ -59,7 +67,13 @@ def tool_handler(method, reader: YandexReader):
 def create_server(reader: YandexReader) -> FastMCP:
     server = FastMCP(
         "yandex-reader", log_level="ERROR",
-        instructions="Read Tracker and Wiki data. Attachment results contain metadata only. No local files are exported.",
+        instructions=(
+            "Read Tracker and Wiki data. Issue/page tools list attachment metadata; use get_tracker_attachment "
+            "or get_wiki_attachment to inspect relevant attachments on demand during analysis. Text files are "
+            "returned as text, images as native images, and other files as original binary resources. "
+            "Binary delivery does not imply the file's contents were understood; client format support varies. "
+            "No local files are exported."
+        ),
     )
     for name, description in TOOL_DESCRIPTIONS.items():
         server.add_tool(
