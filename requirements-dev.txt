@@ -1,0 +1,2 @@
+-r requirements-mcp.txt
+coverage==7.13.1

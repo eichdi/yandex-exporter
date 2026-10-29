@@ -1,0 +1,5 @@
+# Official Python MCP SDK; requires Python 3.10 or newer.
+mcp==1.26.0
+# Pin the settings models to the versions verified with this SDK.
+pydantic==2.12.5
+pydantic-settings==2.12.0

@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+!.env.example
+.coverage
+.coverage.*
+htmlcov/
+exports/
+.superpowers/
+.idea/
+.vscode/
+docs/
